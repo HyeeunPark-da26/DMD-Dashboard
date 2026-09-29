@@ -99,33 +99,24 @@ try:
     else:
         df_amr = pd.read_csv("AMRKlad.csv")
 
-    # CSV 데이터 컬럼명 유연 파싱 (대소문자/공백 처리)
-    cols = {c.lower().strip(): c for c in df_amr.columns}
+    # 컬럼명 자동 탐색 함수 (키워드가 포함된 첫 번째 컬럼 반환)
+    def find_col(keywords, default_idx):
+        for col in df_amr.columns:
+            col_lower = str(col).lower().replace(" ", "_")
+            if any(k in col_lower for k in keywords):
+                return col
+        return df_amr.columns[default_idx]
 
-    # 연령대 컬럼 찾기
-    age_col = [c for k, c in cols.items() if "age" in k][0]
-
-    # 각 채널별 Orders / Revenue 컬럼 자동 매핑
-    online_orders_col = [
-        c
-        for k, c in cols.items()
-        if "online" in k and ("order" in k or "count" in k)
-    ][0]
-    butik_orders_col = [
-        c
-        for k, c in cols.items()
-        if ("butik" in k or "store" in k) and ("order" in k or "count" in k)
-    ][0]
-    online_rev_col = [
-        c
-        for k, c in cols.items()
-        if "online" in k and ("rev" in k or "sale" in k)
-    ][0]
-    butik_rev_col = [
-        c
-        for k, c in cols.items()
-        if ("butik" in k or "store" in k) and ("rev" in k or "sale" in k)
-    ][0]
+    # 각 요소별 컬럼 유연하게 탐색
+    age_col = find_col(["age", "alders", "ålder", "group"], 0)
+    
+    # Orders (수량/건수)
+    online_orders_col = find_col(["online_order", "online_count", "online_orders"], 1)
+    butik_orders_col = find_col(["butik_order", "store_order", "butik_orders"], 2)
+    
+    # Revenue (매출/금액)
+    online_rev_col = find_col(["online_rev", "online_sale", "online_revenue"], 3)
+    butik_rev_col = find_col(["butik_rev", "store_sale", "butik_revenue", "store_rev"], 4)
 
     fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
 
@@ -164,7 +155,7 @@ try:
             mode="lines+markers+text",
             line=dict(color="#d962ca", width=3),
             marker=dict(size=7),
-            text=[f"{x:,.0f}" for x in df_amr[online_rev_col]],
+            text=[f"{x:,.0f}" if pd.notnull(x) else "" for x in df_amr[online_rev_col]],
             textposition="top center",
         ),
         secondary_y=True,
@@ -179,13 +170,13 @@ try:
             mode="lines+markers+text",
             line=dict(color="#d4d137", width=3),
             marker=dict(size=7),
-            text=[f"{x:,.0f}" for x in df_amr[butik_rev_col]],
+            text=[f"{x:,.0f}" if pd.notnull(x) else "" for x in df_amr[butik_rev_col]],
             textposition="bottom center",
         ),
         secondary_y=True,
     )
 
-    # 레이아웃 설정 (막대를 병렬로 배치 barmode='group')
+    # 레이아웃 설정
     fig_dual.update_layout(
         title_text="Försäljning och order per åldersgrupp",
         barmode="group",
