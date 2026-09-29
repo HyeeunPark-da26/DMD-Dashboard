@@ -87,102 +87,118 @@ except Exception as e:
 
 st.markdown("---")
 
-# ----------------------------------------------------
-# 3. Monthly Revenue & Orders by Age Group (Cleaned Combination Chart)
-# ----------------------------------------------------
-st.header("👥 3. Försäljning och order per åldersgrupp")
+# -----------------------------------------------------------------------------
+# 3. Customer Demographics & Performance (Dual-Axis Chart)
+# -----------------------------------------------------------------------------
+st.header("👥 3. Customer Demographics & Performance")
 
 try:
-    df_amr = pd.read_csv("data/AMRKlad.csv")
+    if os.path.exists("data/AMRKlad.csv"):
+        df_amr = pd.read_csv("data/AMRKlad.csv")
+    else:
+        df_amr = pd.read_csv("AMRKlad.csv")
 
-    cols_amr = list(df_amr.columns)
-    age_col = cols_amr[0]
-    
-    online_orders_col = next((c for c in cols_amr if "online" in c.lower() and "order" in c.lower()), cols_amr[1] if len(cols_amr) > 1 else None)
-    butik_orders_col = next((c for c in cols_amr if "butik" in c.lower() and "order" in c.lower()), cols_amr[2] if len(cols_amr) > 2 else None)
-    online_rev_col = next((c for c in cols_amr if "online" in c.lower() and ("rev" in c.lower() or "försälj" in c.lower() or "sales" in c.lower())), cols_amr[3] if len(cols_amr) > 3 else None)
-    butik_rev_col = next((c for c in cols_amr if "butik" in c.lower() and ("rev" in c.lower() or "försälj" in c.lower() or "sales" in c.lower())), cols_amr[4] if len(cols_amr) > 4 else None)
+    # CSV 데이터 컬럼명 유연 파싱 (대소문자/공백 처리)
+    cols = {c.lower().strip(): c for c in df_amr.columns}
 
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
+    # 연령대 컬럼 찾기
+    age_col = [c for k, c in cols.items() if "age" in k][0]
 
-    # 1. Online Orders Bar
-    fig.add_trace(
+    # 각 채널별 Orders / Revenue 컬럼 자동 매핑
+    online_orders_col = [
+        c
+        for k, c in cols.items()
+        if "online" in k and ("order" in k or "count" in k)
+    ][0]
+    butik_orders_col = [
+        c
+        for k, c in cols.items()
+        if ("butik" in k or "store" in k) and ("order" in k or "count" in k)
+    ][0]
+    online_rev_col = [
+        c
+        for k, c in cols.items()
+        if "online" in k and ("rev" in k or "sale" in k)
+    ][0]
+    butik_rev_col = [
+        c
+        for k, c in cols.items()
+        if ("butik" in k or "store" in k) and ("rev" in k or "sale" in k)
+    ][0]
+
+    fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # 1. Online Orders (파란색 막대)
+    fig_dual.add_trace(
         go.Bar(
             x=df_amr[age_col],
             y=df_amr[online_orders_col],
             name="Online_orders",
-            marker_color="#9ECAE1",
+            marker_color="#a2c4ec",
             text=df_amr[online_orders_col],
             textposition="inside",
-            hovertemplate="<b>Online Orders</b>: %{y:,}<extra></extra>",
         ),
         secondary_y=False,
     )
 
-    # 2. Butik Orders Bar
-    fig.add_trace(
+    # 2. Butik Orders (연두색 막대)
+    fig_dual.add_trace(
         go.Bar(
             x=df_amr[age_col],
             y=df_amr[butik_orders_col],
             name="Butik_orders",
-            marker_color="#80E080",
+            marker_color="#8be082",
             text=df_amr[butik_orders_col],
             textposition="inside",
-            hovertemplate="<b>Butik Orders</b>: %{y:,}<extra></extra>",
         ),
         secondary_y=False,
     )
 
-    # Clean display labels (formatted value with background box)
-    online_rev_labels = [f"{val:,.0f} SEK" for val in df_amr[online_rev_col]]
-    butik_rev_labels = [f"{val:,.0f} SEK" for val in df_amr[butik_rev_col]]
-
-    # 3. Online Revenue Line (Placed Above Point with Pink Box)
-    fig.add_trace(
+    # 3. Online Revenue (분홍색 꺾은선)
+    fig_dual.add_trace(
         go.Scatter(
             x=df_amr[age_col],
             y=df_amr[online_rev_col],
             name="Online_revenue",
             mode="lines+markers+text",
-            line=dict(color="#DA70D6", width=3),
-            marker=dict(size=8),
-            text=online_rev_labels,
+            line=dict(color="#d962ca", width=3),
+            marker=dict(size=7),
+            text=[f"{x:,.0f}" for x in df_amr[online_rev_col]],
             textposition="top center",
-            hovertemplate="<b>Online Revenue</b>: %{y:,.0f} SEK<extra></extra>",
         ),
         secondary_y=True,
     )
 
-    # 4. Butik Revenue Line (Placed Below Point with Yellow Box)
-    fig.add_trace(
+    # 4. Butik Revenue (노란색 꺾은선)
+    fig_dual.add_trace(
         go.Scatter(
             x=df_amr[age_col],
             y=df_amr[butik_rev_col],
             name="Butik_revenue",
             mode="lines+markers+text",
-            line=dict(color="#E6C200", width=3),
-            marker=dict(size=8),
-            text=butik_rev_labels,
+            line=dict(color="#d4d137", width=3),
+            marker=dict(size=7),
+            text=[f"{x:,.0f}" for x in df_amr[butik_rev_col]],
             textposition="bottom center",
-            hovertemplate="<b>Butik Revenue</b>: %{y:,.0f} SEK<extra></extra>",
         ),
         secondary_y=True,
     )
 
-    fig.update_layout(
+    # 레이아웃 설정 (막대를 병렬로 배치 barmode='group')
+    fig_dual.update_layout(
         title_text="Försäljning och order per åldersgrupp",
-        title_x=0.5,
         barmode="group",
-        legend=dict(orientation="h", yanchor="top", y=-0.15, xanchor="center", x=0.5),
-        template="plotly_white",
-        height=600,
-        hovermode="x unified", # Shows combined tooltip when hovering over any age group
+        legend=dict(
+            orient="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
+        ),
+        margin=dict(l=20, r=20, t=50, b=80),
     )
 
-    fig.update_yaxes(title_text="Orders (Count)", secondary_y=False)
-    fig.update_yaxes(title_text="Revenue (SEK)", secondary_y=True)
+    fig_dual.update_xaxes(title_text="Åldersgrupp")
+    fig_dual.update_yaxes(title_text="Orders (Count)", secondary_y=False)
+    fig_dual.update_yaxes(title_text="Revenue (SEK)", secondary_y=True)
 
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig_dual, use_container_width=True)
 
 except Exception as e:
-    st.error(f"Could not load or parse 'data/AMRKlad.csv': {e}")
+    st.error(f"Error loading demographic data: {e}")
