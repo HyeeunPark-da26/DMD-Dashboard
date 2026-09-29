@@ -176,7 +176,7 @@ try:
 
     fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # 1. Online_orders (막대 안쪽 안겹치게 표시)
+    # 1. Online_orders
     fig_dual.add_trace(
         go.Bar(
             x=age_order,
@@ -184,8 +184,8 @@ try:
             name="Online_orders",
             marker_color="#a6c9ec",
             text=df_online["Orders"].astype(int),
-            textposition="inside", # ✨ 막대 내부 상단에 배치하여 꺾은선과 충돌 방지
-            insidetextanchor="end",
+            textposition="auto",    # ✨ 공간이 부족하면 알아서 막대 위로 나가되,
+            textangle=0,           # ✨ 절대로 글자가 눕지 않고(0도) 똑바로 섭니다!
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
