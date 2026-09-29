@@ -253,23 +253,7 @@ try:
     fig_dual.update_yaxes(range=[0, 175], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
     fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
 
-    fig_dual.update_layout(
-        title_text="Försäljning och order per åldersgrupp",
-        title_x=0.5,
-        title_font=dict(size=18),
-        barmode="group",
-        plot_bgcolor="white",
-        paper_bgcolor="white",
-        legend=dict(
-            orientation="h",
-            yanchor="top",
-            y=-0.15,
-            xanchor="center",
-            x=0.5,
-            font=dict(size=12)
-        ),
-        margin=dict(l=40, r=40, t=60, b=80),
-    )
+
 
     st.plotly_chart(fig_dual, use_container_width=True)
 
