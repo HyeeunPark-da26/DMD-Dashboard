@@ -99,13 +99,16 @@ try:
     else:
         df_raw = pd.read_csv("AMRKlad.csv", header=None)
 
-    # 헤더 유무에 상관없이 첫 4개 컬럼 추출
+    # 숫자로 변환 불가능한 행(헤더 등) 제외하고 첫 4개 컬럼 추출
     df_amr = df_raw.iloc[:, :4].copy()
     df_amr.columns = ["Age", "Channel", "Orders", "Revenue"]
 
     # 숫자로 강제 변환
-    df_amr["Orders"] = pd.to_numeric(df_amr["Orders"], errors="coerce").fillna(0)
-    df_amr["Revenue"] = pd.to_numeric(df_amr["Revenue"], errors="coerce").fillna(0)
+    df_amr["Orders"] = pd.to_numeric(df_amr["Orders"], errors="coerce")
+    df_amr["Revenue"] = pd.to_numeric(df_amr["Revenue"], errors="coerce")
+
+    # 숫자가 아닌 헤더 행 제거
+    df_amr = df_amr.dropna(subset=["Orders", "Revenue"])
 
     # 연령대 이름 표준화 매핑
     age_map = {
@@ -117,8 +120,10 @@ try:
         "over 60": "over 60", "over60": "over 60", "60+": "over 60",
         "unknown": "Unknown"
     }
-    df_amr["Age"] = df_amr["Age"].astype(str).str.strip().map(lambda x: age_map.get(x.lower(), x))
-    df_amr["Channel"] = df_amr["Channel"].astype(str).str.strip().str.capitalize()
+
+    # 안전하게 str() 변환 후 lower() 적용
+    df_amr["Age"] = df_amr["Age"].apply(lambda x: age_map.get(str(x).strip().lower(), str(x).strip()))
+    df_amr["Channel"] = df_amr["Channel"].apply(lambda x: str(x).strip().capitalize())
 
     # Online / Butik 데이터 분리
     df_online = df_amr[df_amr["Channel"] == "Online"].set_index("Age")
@@ -195,7 +200,7 @@ try:
         secondary_y=True,
     )
 
-    # Y축 범위 및 눈금 설정 (엑셀과 동일하게 맞춤)
+    # Y축 범위 및 눈금 설정
     fig_dual.update_yaxes(range=[0, 160], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
     fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
 
