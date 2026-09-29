@@ -16,7 +16,7 @@ st.write(
 st.markdown("---")
 
 # ----------------------------------------------------
-# 1. Channel Performance Comparison (3 Pie Charts)
+# 1. Channel Performance Comparison (KPI Cards + 3 Pie Chart Cards)
 # ----------------------------------------------------
 st.header("📊 1. Sales Channel Performance Comparison")
 
@@ -29,72 +29,83 @@ try:
     total_sales_col = next((c for c in cols if "total" in c.lower() or "sum" in c.lower()), df_channel.columns[2] if len(cols) > 2 else None)
     avg_sales_col = next((c for c in cols if "avg" in c.lower() or "average" in c.lower()), df_channel.columns[3] if len(cols) > 3 else None)
 
-    # 채널명 텍스트 정리 (대소문자 맞춤)
+    # 채널명 정돈 및 순서 고정 (Online -> Butik)
     df_channel[channel_col] = df_channel[channel_col].astype(str).str.strip().str.capitalize()
-
-    # ✨ 1. 데이터 순서를 Online -> Butik 순으로 정렬
     df_channel[channel_col] = pd.Categorical(df_channel[channel_col], categories=["Online", "Butik"], ordered=True)
     df_channel = df_channel.sort_values(channel_col)
 
-    # ✨ 색상 및 카테고리 순서 정의
+    # ✨ 상단 요약 지표들도 각각 테두리 카드(container) 안으로 넣기!
+    kpi1, kpi2, kpi3 = st.columns(3)
+    with kpi1:
+        with st.container(border=True):
+            total_orders = df_channel[num_sales_col].sum() if num_sales_col else 0
+            st.metric("Total Orders", f"{total_orders:,} pcs")
+
+    with kpi2:
+        with st.container(border=True):
+            total_rev = df_channel[total_sales_col].sum() if total_sales_col else 0
+            st.metric("Total Revenue", f"{total_rev:,.0f} SEK")
+
+    with kpi3:
+        with st.container(border=True):
+            avg_aov = df_channel[avg_sales_col].mean() if avg_sales_col else 0
+            st.metric("Avg Order Value (AOV)", f"{avg_aov:,.1f} SEK")
+
+    st.write("")
+
+    # 오리지널 파란색/주황색 매핑
     color_map = {
-        "Online": "#636EFA", # 파란색
-        "Butik": "#EF553B"   # 주황색
+        "Online": "#d068c2",
+        "Butik": "#e3df3b"
     }
-    cat_orders = {channel_col: ["Online", "Butik"]} # ✨ 순서 고정 설정
+    cat_orders = {channel_col: ["Online", "Butik"]}
 
     col1, col2, col3 = st.columns(3)
 
+    # ✨ 1번 섹션 파이 차트들만 각각 카드(container) 안으로 집어넣기
     if num_sales_col:
         with col1:
-            fig1 = px.pie(
-                df_channel, 
-                values=num_sales_col, 
-                names=channel_col, 
-                title="Number of Sales (Count)", 
-                hole=0.3, 
-                color=channel_col,
-                color_discrete_map=color_map,
-                category_orders=cat_orders # ✨ 범례 순서 고정
-            )
-            fig1.update_traces(textposition="inside", textinfo="value+label", sort=False) # ✨ sort=False로 순서 유지
-            st.plotly_chart(fig1, use_container_width=True)
+            with st.container(border=True):
+                fig1 = px.pie(
+                    df_channel, values=num_sales_col, names=channel_col,
+                    title="Number of Sales (Count)", hole=0.3,
+                    color=channel_col, color_discrete_map=color_map,
+                    category_orders=cat_orders
+                )
+                fig1.update_traces(textposition="inside", textinfo="value+label", sort=False)
+                st.plotly_chart(fig1, use_container_width=True)
 
     if total_sales_col:
         with col2:
-            fig2 = px.pie(
-                df_channel, 
-                values=total_sales_col, 
-                names=channel_col, 
-                title="Total Revenue Share (%) & Amount", 
-                hole=0.3, 
-                color=channel_col,
-                color_discrete_map=color_map,
-                category_orders=cat_orders # ✨ 범례 순서 고정
-            )
-            fig2.update_traces(textposition="inside", texttemplate="%{label}<br>%{percent}<br>(%{value:,.0f} SEK)", sort=False)
-            st.plotly_chart(fig2, use_container_width=True)
+            with st.container(border=True):
+                fig2 = px.pie(
+                    df_channel, values=total_sales_col, names=channel_col,
+                    title="Total Revenue Share (%) & Amount", hole=0.3,
+                    color=channel_col, color_discrete_map=color_map,
+                    category_orders=cat_orders
+                )
+                fig2.update_traces(textposition="inside", texttemplate="%{label}<br>%{percent}<br>(%{value:,.0f} SEK)", sort=False)
+                st.plotly_chart(fig2, use_container_width=True)
 
     if avg_sales_col:
         with col3:
-            fig3 = px.pie(
-                df_channel, 
-                values=avg_sales_col, 
-                names=channel_col, 
-                title="Average Order Value (SEK)", 
-                hole=0.3, 
-                color=channel_col,
-                color_discrete_map=color_map,
-                category_orders=cat_orders # ✨ 범례 순서 고정
-            )
-            fig3.update_traces(textposition="inside", textinfo="value+label", sort=False)
-            st.plotly_chart(fig3, use_container_width=True)
+            with st.container(border=True):
+                fig3 = px.pie(
+                    df_channel, values=avg_sales_col, names=channel_col,
+                    title="Average Order Value (SEK)", hole=0.3,
+                    color=channel_col, color_discrete_map=color_map,
+                    category_orders=cat_orders
+                )
+                fig3.update_traces(textposition="inside", textinfo="value+label", sort=False)
+                st.plotly_chart(fig3, use_container_width=True)
 
 except Exception as e:
     st.error(f"Could not load 'data/revenue_by_channel.csv': {e}")
 
+st.markdown("---")
+
 # ----------------------------------------------------
-# 2. Monthly Orders & Average Order Value (Two Separate Bar Charts)
+# 2. Monthly Orders & Average Order Value (Cards Applied!)
 # ----------------------------------------------------
 st.header("📈 2. Monthly Orders & Average Order Value")
 
@@ -108,19 +119,22 @@ try:
 
     chart_col1, chart_col2 = st.columns(2)
 
+    # ✨ 2번 월별 차트들도 테두리 카드(container)로 정돈
     if orders_col:
         with chart_col1:
-            st.subheader("Total Orders by Month")
-            fig_bar1 = px.bar(df_monthly, x=month_col, y=orders_col, text_auto=True, color_discrete_sequence=["#636EFA"])
-            fig_bar1.update_layout(xaxis_title="Sale Month", yaxis_title="Total Orders (Count)")
-            st.plotly_chart(fig_bar1, use_container_width=True)
+            with st.container(border=True):
+                st.subheader("Total Orders by Month")
+                fig_bar1 = px.bar(df_monthly, x=month_col, y=orders_col, text_auto=True, color_discrete_sequence=["#636EFA"])
+                fig_bar1.update_layout(xaxis_title="Sale Month", yaxis_title="Total Orders (Count)")
+                st.plotly_chart(fig_bar1, use_container_width=True)
 
     if avg_val_col:
         with chart_col2:
-            st.subheader("Average Sales per Order (SEK)")
-            fig_bar2 = px.bar(df_monthly, x=month_col, y=avg_val_col, text_auto=".2f", color_discrete_sequence=["#00CC96"])
-            fig_bar2.update_layout(xaxis_title="Sale Month", yaxis_title="Avg Sale (SEK)")
-            st.plotly_chart(fig_bar2, use_container_width=True)
+            with st.container(border=True):
+                st.subheader("Average Sales per Order (SEK)")
+                fig_bar2 = px.bar(df_monthly, x=month_col, y=avg_val_col, text_auto=".2f", color_discrete_sequence=["#00CC96"])
+                fig_bar2.update_layout(xaxis_title="Sale Month", yaxis_title="Avg Sale (SEK)")
+                st.plotly_chart(fig_bar2, use_container_width=True)
 
 except Exception as e:
     st.error(f"Could not load 'data/totalorder_avg_by_month.csv': {e}")
@@ -138,18 +152,13 @@ try:
     else:
         df_raw = pd.read_csv("AMRKlad.csv", header=None)
 
-    # 숫자로 변환 불가능한 행 제외하고 첫 4개 컬럼 추출
     df_amr = df_raw.iloc[:, :4].copy()
     df_amr.columns = ["Age", "Channel", "Orders", "Revenue"]
 
-    # 숫자로 강제 변환
     df_amr["Orders"] = pd.to_numeric(df_amr["Orders"], errors="coerce")
     df_amr["Revenue"] = pd.to_numeric(df_amr["Revenue"], errors="coerce")
-
-    # 헤더 및 결측치 행 제거
     df_amr = df_amr.dropna(subset=["Orders", "Revenue"])
 
-    # 연령대 이름 표준화 매핑
     age_map = {
         "under20": "Under 20", "under 20": "Under 20",
         "20s": "20s", "20-29": "20s",
@@ -163,14 +172,11 @@ try:
     df_amr["Age"] = df_amr["Age"].apply(lambda x: age_map.get(str(x).strip().lower(), str(x).strip()))
     df_amr["Channel"] = df_amr["Channel"].apply(lambda x: str(x).strip().capitalize())
 
-    # Online / Butik 데이터 분리
     df_online = df_amr[df_amr["Channel"] == "Online"].set_index("Age")
     df_butik = df_amr[df_amr["Channel"] == "Butik"].set_index("Age")
 
-    # 정렬할 연령대 순서
     age_order = ["Under 20", "20s", "30s", "40s", "50s", "over 60", "Unknown"]
 
-    # 순서에 맞춰 데이터 재정렬
     df_online = df_online.reindex(age_order).fillna(0)
     df_butik = df_butik.reindex(age_order).fillna(0)
 
@@ -184,16 +190,16 @@ try:
             name="Online_orders",
             marker_color="#a6c9ec",
             text=df_online["Orders"].astype(int),
-            textposition="inside",     # ✨ 위치는 무조건 막대 내부(상단)
-            insidetextanchor="end",    # ✨ 막대 안쪽 상단에 바짝 붙임
-            textangle=0,               # ✨ 글자는 무조건 0도 (수평)
-            constraintext="none",      # ✨ 핵심! 공간 부족해도 회전시키지 않고 밖으로 넘치게 허용
+            textposition="inside",
+            insidetextanchor="start",
+            textangle=0,
+            constraintext="none",
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 2. Butik_orders (막대 안쪽 안겹치게 표시)
+    # 2. Butik_orders
     fig_dual.add_trace(
         go.Bar(
             x=age_order,
@@ -201,15 +207,17 @@ try:
             name="Butik_orders",
             marker_color="#8ed973",
             text=df_butik["Orders"].astype(int),
-            textposition="inside", # ✨ 막대 내부 상단에 배치
-            insidetextanchor="end",
+            textposition="inside",
+            insidetextanchor="start",
+            textangle=0,
+            constraintext="none",
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 3. Online_revenue (분홍색 꺾은선 -> 라벨을 금액 단위만 깔끔하게 표시)
-    online_labels = [f"{int(rev):,} SEK" if rev > 0 else "" for rev in df_online["Revenue"]]
+    # 3. Online_revenue
+    online_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_online["Revenue"])]
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
@@ -219,14 +227,14 @@ try:
             line=dict(color="#d068c2", width=3.5),
             marker=dict(size=6, color="#d068c2"),
             text=online_labels,
-            textposition="top center", # ✨ 점 위쪽에 배치
+            textposition="top center",
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
 
-    # 4. Butik_revenue (노란색 꺾은선 -> 라벨을 금액 단위만 깔끔하게 표시)
-    butik_labels = [f"{int(rev):,} SEK" if rev > 0 else "" for rev in df_butik["Revenue"]]
+    # 4. Butik_revenue
+    butik_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_butik["Revenue"])]
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
@@ -236,17 +244,15 @@ try:
             line=dict(color="#e3df3b", width=3.5),
             marker=dict(size=6, color="#e3df3b"),
             text=butik_labels,
-            textposition="bottom center", # ✨ 점 아래쪽에 배치하여 분홍선과 충돌 방지
+            textposition="bottom center",
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
 
-    # Y축 범위 조정 (꺾은선 라벨이 차트 상단 밖으로 나가지 않도록 범위 여유 확보)
-    fig_dual.update_yaxes(range=[0, 160], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
-    fig_dual.update_yaxes(range=[-5000, 100000], dtick=20000, secondary_y=True, showgrid=False)
+    fig_dual.update_yaxes(range=[0, 175], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
+    fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
 
-    # 레이아웃 설정
     fig_dual.update_layout(
         title_text="Försäljning och order per åldersgrupp",
         title_x=0.5,
