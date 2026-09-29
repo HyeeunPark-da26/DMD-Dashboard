@@ -184,8 +184,10 @@ try:
             name="Online_orders",
             marker_color="#a6c9ec",
             text=df_online["Orders"].astype(int),
-            textposition="auto",    # ✨ 공간이 부족하면 알아서 막대 위로 나가되,
-            textangle=0,           # ✨ 절대로 글자가 눕지 않고(0도) 똑바로 섭니다!
+            textposition="inside",     # ✨ 위치는 무조건 막대 내부(상단)
+            insidetextanchor="end",    # ✨ 막대 안쪽 상단에 바짝 붙임
+            textangle=0,               # ✨ 글자는 무조건 0도 (수평)
+            constraintext="none",      # ✨ 핵심! 공간 부족해도 회전시키지 않고 밖으로 넘치게 허용
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
