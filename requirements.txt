@@ -1,4 +1,5 @@
 # Moduler vi behöver
-streamlit   #för webappen
-pandas  #läsa in data och hantera tabeller
-altair  #för att skapa interaktiva grafer
+streamlit
+pandas
+plotly
+openpyxl
