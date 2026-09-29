@@ -99,7 +99,7 @@ try:
     else:
         df_amr = pd.read_csv("AMRKlad.csv")
 
-    # 컬럼명 자동 탐색 함수 (키워드가 포함된 첫 번째 컬럼 반환)
+    # 컬럼명 자동 탐색 함수
     def find_col(keywords, default_idx):
         for col in df_amr.columns:
             col_lower = str(col).lower().replace(" ", "_")
@@ -107,27 +107,47 @@ try:
                 return col
         return df_amr.columns[default_idx]
 
-    # 각 요소별 컬럼 유연하게 탐색
     age_col = find_col(["age", "alders", "ålder", "group"], 0)
-    
-    # Orders (수량/건수)
     online_orders_col = find_col(["online_order", "online_count", "online_orders"], 1)
     butik_orders_col = find_col(["butik_order", "store_order", "butik_orders"], 2)
-    
-    # Revenue (매출/금액)
     online_rev_col = find_col(["online_rev", "online_sale", "online_revenue"], 3)
     butik_rev_col = find_col(["butik_rev", "store_sale", "butik_revenue", "store_rev"], 4)
+
+    # 1. 연령대 이름 통일 (중복 제거)
+    age_map = {
+        "under20": "Under 20", "under 20": "Under 20",
+        "20s": "20s", "20-29": "20s",
+        "30s": "30s", "30-39": "30s",
+        "40s": "40s", "40-49": "40s",
+        "50s": "50s", "50-59": "50s",
+        "over 60": "over 60", "over60": "over 60", "60+": "over 60",
+        "unknown": "Unknown"
+    }
+    df_amr[age_col] = df_amr[age_col].astype(str).str.strip().map(lambda x: age_map.get(x.lower(), x))
+
+    # 2. 모든 숫자 데이터 수치형(Numeric) 강제 변환 및 결측치 0 처리
+    num_cols = [online_orders_col, butik_orders_col, online_rev_col, butik_rev_col]
+    for col in num_cols:
+        df_amr[col] = pd.to_numeric(df_amr[col].astype(str).str.replace(",", "").str.strip(), errors="coerce").fillna(0)
+
+    # 3. 연령대별 합산 (Groupby)
+    df_grouped = df_amr.groupby(age_col, as_index=False)[num_cols].sum()
+
+    # 연령대 정렬 순서 정의
+    order_list = ["Under 20", "20s", "30s", "40s", "50s", "over 60", "Unknown"]
+    df_grouped[age_col] = pd.Categorical(df_grouped[age_col], categories=order_list, ordered=True)
+    df_grouped = df_grouped.sort_values(age_col)
 
     fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
 
     # 1. Online Orders (파란색 막대)
     fig_dual.add_trace(
         go.Bar(
-            x=df_amr[age_col],
-            y=df_amr[online_orders_col],
+            x=df_grouped[age_col],
+            y=df_grouped[online_orders_col],
             name="Online_orders",
             marker_color="#a2c4ec",
-            text=df_amr[online_orders_col],
+            text=df_grouped[online_orders_col].astype(int),
             textposition="inside",
         ),
         secondary_y=False,
@@ -136,11 +156,11 @@ try:
     # 2. Butik Orders (연두색 막대)
     fig_dual.add_trace(
         go.Bar(
-            x=df_amr[age_col],
-            y=df_amr[butik_orders_col],
+            x=df_grouped[age_col],
+            y=df_grouped[butik_orders_col],
             name="Butik_orders",
             marker_color="#8be082",
-            text=df_amr[butik_orders_col],
+            text=df_grouped[butik_orders_col].astype(int),
             textposition="inside",
         ),
         secondary_y=False,
@@ -149,13 +169,13 @@ try:
     # 3. Online Revenue (분홍색 꺾은선)
     fig_dual.add_trace(
         go.Scatter(
-            x=df_amr[age_col],
-            y=df_amr[online_rev_col],
+            x=df_grouped[age_col],
+            y=df_grouped[online_rev_col],
             name="Online_revenue",
             mode="lines+markers+text",
             line=dict(color="#d962ca", width=3),
             marker=dict(size=7),
-            text=[f"{x:,.0f}" if pd.notnull(x) else "" for x in df_amr[online_rev_col]],
+            text=[f"{int(x):,}" if x > 0 else "" for x in df_grouped[online_rev_col]],
             textposition="top center",
         ),
         secondary_y=True,
@@ -164,13 +184,13 @@ try:
     # 4. Butik Revenue (노란색 꺾은선)
     fig_dual.add_trace(
         go.Scatter(
-            x=df_amr[age_col],
-            y=df_amr[butik_rev_col],
+            x=df_grouped[age_col],
+            y=df_grouped[butik_rev_col],
             name="Butik_revenue",
             mode="lines+markers+text",
             line=dict(color="#d4d137", width=3),
             marker=dict(size=7),
-            text=[f"{x:,.0f}" if pd.notnull(x) else "" for x in df_amr[butik_rev_col]],
+            text=[f"{int(x):,}" if x > 0 else "" for x in df_grouped[butik_rev_col]],
             textposition="bottom center",
         ),
         secondary_y=True,
