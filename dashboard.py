@@ -95,25 +95,19 @@ st.header("👥 3. Customer Demographics & Performance")
 
 try:
     if os.path.exists("data/AMRKlad.csv"):
-        df_amr = pd.read_csv("data/AMRKlad.csv")
+        df_raw = pd.read_csv("data/AMRKlad.csv", header=None)
     else:
-        df_amr = pd.read_csv("AMRKlad.csv")
+        df_raw = pd.read_csv("AMRKlad.csv", header=None)
 
-    # 컬럼명 자동 탐색 함수
-    def find_col(keywords, default_idx):
-        for col in df_amr.columns:
-            col_lower = str(col).lower().replace(" ", "_")
-            if any(k in col_lower for k in keywords):
-                return col
-        return df_amr.columns[default_idx]
+    # 헤더 유무에 상관없이 첫 4개 컬럼 추출
+    df_amr = df_raw.iloc[:, :4].copy()
+    df_amr.columns = ["Age", "Channel", "Orders", "Revenue"]
 
-    age_col = find_col(["age", "alders", "ålder", "group"], 0)
-    online_orders_col = find_col(["online_order", "online_count", "online_orders"], 1)
-    butik_orders_col = find_col(["butik_order", "store_order", "butik_orders"], 2)
-    online_rev_col = find_col(["online_rev", "online_sale", "online_revenue"], 3)
-    butik_rev_col = find_col(["butik_rev", "store_sale", "butik_revenue", "store_rev"], 4)
+    # 숫자로 강제 변환
+    df_amr["Orders"] = pd.to_numeric(df_amr["Orders"], errors="coerce").fillna(0)
+    df_amr["Revenue"] = pd.to_numeric(df_amr["Revenue"], errors="coerce").fillna(0)
 
-    # 1. 연령대 이름 통일 (float / NaN 에러 방지 처리)
+    # 연령대 이름 표준화 매핑
     age_map = {
         "under20": "Under 20", "under 20": "Under 20",
         "20s": "20s", "20-29": "20s",
@@ -121,102 +115,108 @@ try:
         "40s": "40s", "40-49": "40s",
         "50s": "50s", "50-59": "50s",
         "over 60": "over 60", "over60": "over 60", "60+": "over 60",
-        "unknown": "Unknown", "nan": "Unknown"
+        "unknown": "Unknown"
     }
-    df_amr[age_col] = (
-        df_amr[age_col]
-        .fillna("Unknown")
-        .astype(str)
-        .str.strip()
-        .map(lambda x: age_map.get(x.lower(), x))
-    )
+    df_amr["Age"] = df_amr["Age"].astype(str).str.strip().map(lambda x: age_map.get(x.lower(), x))
+    df_amr["Channel"] = df_amr["Channel"].astype(str).str.strip().str.capitalize()
 
-    # 2. 모든 숫자 데이터 수치형(Numeric) 강제 변환 및 결측치 0 처리
-    num_cols = [online_orders_col, butik_orders_col, online_rev_col, butik_rev_col]
-    for col in num_cols:
-        df_amr[col] = pd.to_numeric(
-            df_amr[col].astype(str).str.replace(",", "").str.strip(), errors="coerce"
-        ).fillna(0)
+    # Online / Butik 데이터 분리
+    df_online = df_amr[df_amr["Channel"] == "Online"].set_index("Age")
+    df_butik = df_amr[df_amr["Channel"] == "Butik"].set_index("Age")
 
-    # 3. 연령대별 합산 (Groupby)
-    df_grouped = df_amr.groupby(age_col, as_index=False)[num_cols].sum()
+    # 정렬할 연령대 순서
+    age_order = ["Under 20", "20s", "30s", "40s", "50s", "over 60", "Unknown"]
 
-    # 연령대 정렬 순서 정의
-    order_list = ["Under 20", "20s", "30s", "40s", "50s", "over 60", "Unknown"]
-    df_grouped[age_col] = pd.Categorical(df_grouped[age_col], categories=order_list, ordered=True)
-    df_grouped = df_grouped.sort_values(age_col)
+    # 순서에 맞춰 데이터 재정렬
+    df_online = df_online.reindex(age_order).fillna(0)
+    df_butik = df_butik.reindex(age_order).fillna(0)
 
     fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # 1. Online Orders (파란색 막대)
+    # 1. Online_orders (연한 하늘색 막대)
     fig_dual.add_trace(
         go.Bar(
-            x=df_grouped[age_col],
-            y=df_grouped[online_orders_col],
+            x=age_order,
+            y=df_online["Orders"],
             name="Online_orders",
-            marker_color="#a2c4ec",
-            text=df_grouped[online_orders_col].astype(int),
+            marker_color="#a6c9ec",
+            text=df_online["Orders"].astype(int),
             textposition="inside",
+            textfont=dict(size=12, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 2. Butik Orders (연두색 막대)
+    # 2. Butik_orders (연두색 막대)
     fig_dual.add_trace(
         go.Bar(
-            x=df_grouped[age_col],
-            y=df_grouped[butik_orders_col],
+            x=age_order,
+            y=df_butik["Orders"],
             name="Butik_orders",
-            marker_color="#8be082",
-            text=df_grouped[butik_orders_col].astype(int),
+            marker_color="#8ed973",
+            text=df_butik["Orders"].astype(int),
             textposition="inside",
+            textfont=dict(size=12, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 3. Online Revenue (분홍색 꺾은선)
+    # 3. Online_revenue (분홍색 꺾은선 + 라벨 박스)
+    online_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_online["Revenue"])]
     fig_dual.add_trace(
         go.Scatter(
-            x=df_grouped[age_col],
-            y=df_grouped[online_rev_col],
+            x=age_order,
+            y=df_online["Revenue"],
             name="Online_revenue",
             mode="lines+markers+text",
-            line=dict(color="#d962ca", width=3),
-            marker=dict(size=7),
-            text=[f"{int(x):,}" if x > 0 else "" for x in df_grouped[online_rev_col]],
+            line=dict(color="#d068c2", width=3.5),
+            marker=dict(size=6, color="#d068c2"),
+            text=online_labels,
             textposition="top center",
+            textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
 
-    # 4. Butik Revenue (노란색 꺾은선)
+    # 4. Butik_revenue (노란색 꺾은선 + 라벨 박스)
+    butik_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_butik["Revenue"])]
     fig_dual.add_trace(
         go.Scatter(
-            x=df_grouped[age_col],
-            y=df_grouped[butik_rev_col],
+            x=age_order,
+            y=df_butik["Revenue"],
             name="Butik_revenue",
             mode="lines+markers+text",
-            line=dict(color="#d4d137", width=3),
-            marker=dict(size=7),
-            text=[f"{int(x):,}" if x > 0 else "" for x in df_grouped[butik_rev_col]],
+            line=dict(color="#e3df3b", width=3.5),
+            marker=dict(size=6, color="#e3df3b"),
+            text=butik_labels,
             textposition="bottom center",
+            textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
+
+    # Y축 범위 및 눈금 설정 (엑셀과 동일하게 맞춤)
+    fig_dual.update_yaxes(range=[0, 160], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
+    fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
 
     # 레이아웃 설정
     fig_dual.update_layout(
         title_text="Försäljning och order per åldersgrupp",
+        title_x=0.5,
+        title_font=dict(size=18),
         barmode="group",
+        plot_bgcolor="white",
+        paper_bgcolor="white",
         legend=dict(
-            orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
+            orientation="h",
+            yanchor="top",
+            y=-0.15,
+            xanchor="center",
+            x=0.5,
+            font=dict(size=12)
         ),
-        margin=dict(l=20, r=20, t=50, b=80),
+        margin=dict(l=40, r=40, t=60, b=80),
     )
-
-    fig_dual.update_xaxes(title_text="Åldersgrupp")
-    fig_dual.update_yaxes(title_text="Orders (Count)", secondary_y=False)
-    fig_dual.update_yaxes(title_text="Revenue (SEK)", secondary_y=True)
 
     st.plotly_chart(fig_dual, use_container_width=True)
 
