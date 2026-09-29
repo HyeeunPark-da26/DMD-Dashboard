@@ -113,7 +113,7 @@ try:
     online_rev_col = find_col(["online_rev", "online_sale", "online_revenue"], 3)
     butik_rev_col = find_col(["butik_rev", "store_sale", "butik_revenue", "store_rev"], 4)
 
-    # 1. 연령대 이름 통일 (중복 제거)
+    # 1. 연령대 이름 통일 (float / NaN 에러 방지 처리)
     age_map = {
         "under20": "Under 20", "under 20": "Under 20",
         "20s": "20s", "20-29": "20s",
@@ -121,14 +121,22 @@ try:
         "40s": "40s", "40-49": "40s",
         "50s": "50s", "50-59": "50s",
         "over 60": "over 60", "over60": "over 60", "60+": "over 60",
-        "unknown": "Unknown"
+        "unknown": "Unknown", "nan": "Unknown"
     }
-    df_amr[age_col] = df_amr[age_col].astype(str).str.strip().map(lambda x: age_map.get(x.lower(), x))
+    df_amr[age_col] = (
+        df_amr[age_col]
+        .fillna("Unknown")
+        .astype(str)
+        .str.strip()
+        .map(lambda x: age_map.get(x.lower(), x))
+    )
 
     # 2. 모든 숫자 데이터 수치형(Numeric) 강제 변환 및 결측치 0 처리
     num_cols = [online_orders_col, butik_orders_col, online_rev_col, butik_rev_col]
     for col in num_cols:
-        df_amr[col] = pd.to_numeric(df_amr[col].astype(str).str.replace(",", "").str.strip(), errors="coerce").fillna(0)
+        df_amr[col] = pd.to_numeric(
+            df_amr[col].astype(str).str.replace(",", "").str.strip(), errors="coerce"
+        ).fillna(0)
 
     # 3. 연령대별 합산 (Groupby)
     df_grouped = df_amr.groupby(age_col, as_index=False)[num_cols].sum()
