@@ -4,6 +4,10 @@ import plotly.express as px
 import streamlit as st
 from plotly.subplots import make_subplots
 
+streamlit
+pandas
+plotly
+
 # Page configuration
 st.set_page_config(page_title="Klädbutik Dashboard", layout="wide")
 
