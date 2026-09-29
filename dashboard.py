@@ -132,7 +132,7 @@ try:
         with chart_col2:
             with st.container(border=True):
                 st.subheader("Average Sales per Order (SEK)")
-                fig_bar2 = px.bar(df_monthly, x=month_col, y=avg_val_col, text_auto=".2f", color_discrete_sequence=["#83F4D6"])
+                fig_bar2 = px.bar(df_monthly, x=month_col, y=avg_val_col, text_auto=".2f", color_discrete_sequence=["#96E5D0"])
                 fig_bar2.update_layout(xaxis_title="Sale Month", yaxis_title="Avg Sale (SEK)")
                 st.plotly_chart(fig_bar2, use_container_width=True)
 
