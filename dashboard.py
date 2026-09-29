@@ -181,7 +181,7 @@ try:
         title_text="Försäljning och order per åldersgrupp",
         barmode="group",
         legend=dict(
-            orient="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
+            orientation="h", yanchor="bottom", y=-0.25, xanchor="center", x=0.5
         ),
         margin=dict(l=20, r=20, t=50, b=80),
     )
