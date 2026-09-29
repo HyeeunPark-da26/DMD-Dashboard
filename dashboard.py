@@ -18,7 +18,7 @@ st.markdown("---")
 # ----------------------------------------------------
 # 1. Channel Performance Comparison (KPI Cards + 3 Pie Chart Cards)
 # ----------------------------------------------------
-st.header("📊 1. Sales Channel Performance Comparison")
+st.header("Sales Channel Performance Comparison")
 
 try:
     df_channel = pd.read_csv("data/revenue_by_channel.csv")
@@ -107,7 +107,7 @@ st.markdown("---")
 # ----------------------------------------------------
 # 2. Monthly Orders & Average Order Value (Cards Applied!)
 # ----------------------------------------------------
-st.header("📈 2. Monthly Orders & Average Order Value")
+st.header("Monthly Orders & Average Order Value")
 
 try:
     df_monthly = pd.read_csv("data/totalorder_avg_by_month.csv")
@@ -144,7 +144,7 @@ st.markdown("---")
 # -----------------------------------------------------------------------------
 # 3. Customer Demographics & Performance (Dual-Axis Chart)
 # -----------------------------------------------------------------------------
-st.header("👥 3. Customer Demographics & Performance")
+st.header("Customer Demographics & Performance")
 
 try:
     if os.path.exists("data/AMRKlad.csv"):
