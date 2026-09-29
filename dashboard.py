@@ -176,7 +176,7 @@ try:
 
     fig_dual = make_subplots(specs=[[{"secondary_y": True}]])
 
-    # 1. Online_orders (연한 하늘색 막대 -> 바깥쪽 상단 표시 & 0도 고정)
+    # 1. Online_orders (막대 안쪽 안겹치게 표시)
     fig_dual.add_trace(
         go.Bar(
             x=age_order,
@@ -184,14 +184,14 @@ try:
             name="Online_orders",
             marker_color="#a6c9ec",
             text=df_online["Orders"].astype(int),
-            textposition="outside",
-            textangle=0,
-            textfont=dict(size=12, color="black"),
+            textposition="inside", # ✨ 막대 내부 상단에 배치하여 꺾은선과 충돌 방지
+            insidetextanchor="end",
+            textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 2. Butik_orders (연두색 막대 -> 바깥쪽 상단 표시 & 0도 고정)
+    # 2. Butik_orders (막대 안쪽 안겹치게 표시)
     fig_dual.add_trace(
         go.Bar(
             x=age_order,
@@ -199,15 +199,15 @@ try:
             name="Butik_orders",
             marker_color="#8ed973",
             text=df_butik["Orders"].astype(int),
-            textposition="outside",
-            textangle=0,
-            textfont=dict(size=12, color="black"),
+            textposition="inside", # ✨ 막대 내부 상단에 배치
+            insidetextanchor="end",
+            textfont=dict(size=11, color="black"),
         ),
         secondary_y=False,
     )
 
-    # 3. Online_revenue (분홍색 꺾은선 + 라벨 박스)
-    online_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_online["Revenue"])]
+    # 3. Online_revenue (분홍색 꺾은선 -> 라벨을 금액 단위만 깔끔하게 표시)
+    online_labels = [f"{int(rev):,} SEK" if rev > 0 else "" for rev in df_online["Revenue"]]
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
@@ -217,14 +217,14 @@ try:
             line=dict(color="#d068c2", width=3.5),
             marker=dict(size=6, color="#d068c2"),
             text=online_labels,
-            textposition="top center",
+            textposition="top center", # ✨ 점 위쪽에 배치
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
 
-    # 4. Butik_revenue (노란색 꺾은선 + 라벨 박스)
-    butik_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_butik["Revenue"])]
+    # 4. Butik_revenue (노란색 꺾은선 -> 라벨을 금액 단위만 깔끔하게 표시)
+    butik_labels = [f"{int(rev):,} SEK" if rev > 0 else "" for rev in df_butik["Revenue"]]
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
@@ -234,15 +234,15 @@ try:
             line=dict(color="#e3df3b", width=3.5),
             marker=dict(size=6, color="#e3df3b"),
             text=butik_labels,
-            textposition="bottom center",
+            textposition="bottom center", # ✨ 점 아래쪽에 배치하여 분홍선과 충돌 방지
             textfont=dict(size=11, color="black"),
         ),
         secondary_y=True,
     )
 
-    # Y축 범위 및 눈금 설정 (상단 여유 공간을 위해 range 상단 약간 확장)
-    fig_dual.update_yaxes(range=[0, 175], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
-    fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
+    # Y축 범위 조정 (꺾은선 라벨이 차트 상단 밖으로 나가지 않도록 범위 여유 확보)
+    fig_dual.update_yaxes(range=[0, 160], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
+    fig_dual.update_yaxes(range=[-5000, 100000], dtick=20000, secondary_y=True, showgrid=False)
 
     # 레이아웃 설정
     fig_dual.update_layout(
