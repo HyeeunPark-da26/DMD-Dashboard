@@ -29,14 +29,19 @@ try:
     total_sales_col = next((c for c in cols if "total" in c.lower() or "sum" in c.lower()), df_channel.columns[2] if len(cols) > 2 else None)
     avg_sales_col = next((c for c in cols if "avg" in c.lower() or "average" in c.lower()), df_channel.columns[3] if len(cols) > 3 else None)
 
-    # 채널명 명확하게 대소문자 정돈 (필요 시)
+    # 채널명 텍스트 정리 (대소문자 맞춤)
     df_channel[channel_col] = df_channel[channel_col].astype(str).str.strip().str.capitalize()
 
-    # ✨ 채널별 색상 고정 매핑
+    # ✨ 1. 데이터 순서를 Online -> Butik 순으로 정렬
+    df_channel[channel_col] = pd.Categorical(df_channel[channel_col], categories=["Online", "Butik"], ordered=True)
+    df_channel = df_channel.sort_values(channel_col)
+
+    # ✨ 색상 및 카테고리 순서 정의
     color_map = {
-        "Online": "#636EFA",
-        "Butik": "#EF553B"
+        "Online": "#636EFA", # 파란색
+        "Butik": "#EF553B"   # 주황색
     }
+    cat_orders = {channel_col: ["Online", "Butik"]} # ✨ 순서 고정 설정
 
     col1, col2, col3 = st.columns(3)
 
@@ -48,10 +53,11 @@ try:
                 names=channel_col, 
                 title="Number of Sales (Count)", 
                 hole=0.3, 
-                color=channel_col,               # ✨ color 지정 필요
-                color_discrete_map=color_map    # ✨ 고정 매핑 적용
+                color=channel_col,
+                color_discrete_map=color_map,
+                category_orders=cat_orders # ✨ 범례 순서 고정
             )
-            fig1.update_traces(textposition="inside", textinfo="value+label")
+            fig1.update_traces(textposition="inside", textinfo="value+label", sort=False) # ✨ sort=False로 순서 유지
             st.plotly_chart(fig1, use_container_width=True)
 
     if total_sales_col:
@@ -62,10 +68,11 @@ try:
                 names=channel_col, 
                 title="Total Revenue Share (%) & Amount", 
                 hole=0.3, 
-                color=channel_col,               # ✨ color 지정 필요
-                color_discrete_map=color_map    # ✨ 고정 매핑 적용
+                color=channel_col,
+                color_discrete_map=color_map,
+                category_orders=cat_orders # ✨ 범례 순서 고정
             )
-            fig2.update_traces(textposition="inside", texttemplate="%{label}<br>%{percent}<br>(%{value:,.0f} SEK)")
+            fig2.update_traces(textposition="inside", texttemplate="%{label}<br>%{percent}<br>(%{value:,.0f} SEK)", sort=False)
             st.plotly_chart(fig2, use_container_width=True)
 
     if avg_sales_col:
@@ -76,10 +83,11 @@ try:
                 names=channel_col, 
                 title="Average Order Value (SEK)", 
                 hole=0.3, 
-                color=channel_col,               # ✨ color 지정 필요
-                color_discrete_map=color_map    # ✨ 고정 매핑 적용
+                color=channel_col,
+                color_discrete_map=color_map,
+                category_orders=cat_orders # ✨ 범례 순서 고정
             )
-            fig3.update_traces(textposition="inside", textinfo="value+label")
+            fig3.update_traces(textposition="inside", textinfo="value+label", sort=False)
             st.plotly_chart(fig3, use_container_width=True)
 
 except Exception as e:
