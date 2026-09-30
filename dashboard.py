@@ -8,7 +8,7 @@ from plotly.subplots import make_subplots
 # Page configuration
 st.set_page_config(page_title="Klädbutik Dashboard", layout="wide")
 
-st.title("👗 Klädbutik Sales & Customer Analysis Dashboard")
+st.title("Klädbutik Sales & Customer Analysis Dashboard")
 st.write(
     "Interactive dashboard presenting channel performance, monthly trends, and demographic sales breakdown."
 )
@@ -191,7 +191,7 @@ try:
             marker_color="#a6c9ec",
             text=df_online["Orders"].astype(int),
             textposition="inside",
-            insidetextanchor="start",
+            insidetextanchor="middle",
             textangle=0,
             constraintext="none",
             textfont=dict(size=11, color="black"),
@@ -208,7 +208,7 @@ try:
             marker_color="#8ed973",
             text=df_butik["Orders"].astype(int),
             textposition="inside",
-            insidetextanchor="start",
+            insidetextanchor="middle",
             textangle=0,
             constraintext="none",
             textfont=dict(size=11, color="black"),
@@ -216,44 +216,40 @@ try:
         secondary_y=False,
     )
 
-    # 3. Online_revenue
-    online_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_online["Revenue"])]
+# 3. Online_revenue
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
             y=df_online["Revenue"],
             name="Online_revenue",
-            mode="lines+markers+text",
+            mode="lines+markers",  # +text 제거!
             line=dict(color="#d068c2", width=3.5),
             marker=dict(size=6, color="#d068c2"),
-            text=online_labels,
-            textposition="top center",
-            textfont=dict(size=11, color="black"),
+            hovertemplate="<b>Online Revenue</b><br>연령대: %{x}<br>매출: %{y:,.0f} SEK<extra></extra>",  # 호버 툴팁 추가!
         ),
         secondary_y=True,
     )
 
     # 4. Butik_revenue
-    butik_labels = [f"{age}, {int(rev)}" if rev > 0 else "" for age, rev in zip(age_order, df_butik["Revenue"])]
     fig_dual.add_trace(
         go.Scatter(
             x=age_order,
             y=df_butik["Revenue"],
             name="Butik_revenue",
-            mode="lines+markers+text",
+            mode="lines+markers",  # +text 제거!
             line=dict(color="#e3df3b", width=3.5),
             marker=dict(size=6, color="#e3df3b"),
-            text=butik_labels,
-            textposition="bottom center",
-            textfont=dict(size=11, color="black"),
+            hovertemplate="<b>Butik Revenue</b><br>연령대: %{x}<br>매출: %{y:,.0f} SEK<extra></extra>",  # 호버 툴팁 추가!
         ),
         secondary_y=True,
     )
 
-    fig_dual.update_yaxes(range=[0, 175], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5")
-    fig_dual.update_yaxes(range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False)
-
-
+    fig_dual.update_yaxes(
+        range=[0, 175], dtick=20, secondary_y=False, showgrid=True, gridcolor="#e5e5e5"
+    )
+    fig_dual.update_yaxes(
+        range=[0, 95000], dtick=10000, secondary_y=True, showgrid=False
+    )
 
     st.plotly_chart(fig_dual, use_container_width=True)
 
